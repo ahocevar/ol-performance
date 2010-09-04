@@ -1,0 +1,87 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Performance Considerations in OpenLayers Based Web Mapping</title>
+
+    <script type="text/javascript">
+    if (navigator.userAgent.match("MSIE")) {
+        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+    }
+    </script>
+    <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
+    <link rel="stylesheet" href="http://openlayers.org/dev/examples/style.css" type="text/css" />
+  </head>
+  <body>
+    <h1 id="title">Group Your Layers</h1>
+
+    <div id="tags"></div>
+
+    <div id="shortdesc">Pro 1: group layers on the server</div>
+
+    <div id="map" class="smallmap"></div>
+
+    <div id="docs">
+        <p>In GeoServer, we can create a layer group. The result is a new WMS
+        layer, consisting of several layers from the same server. While looking
+        the same as if we loaded all layers of the group separately, this loads
+        faster. Also panning will be faster, because we do not have to deal
+        with many DOM elements. The disadvantage is that we cannot control the
+        visibility of the layers that make up the group.</p>
+        <p>Now let's see how we can <a href="group3.html">group layers on the
+        client</a>.</p>
+    </div>
+    <script src="script/OpenLayers-wms-layerswitcher.js"></script>
+    <script type="text/javascript">
+        OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
+        var numLayers = 0, notLoading = true;
+        var map = new OpenLayers.Map('map', {
+            projection: "EPSG:900913",
+            units: "m",
+            maxExtent: new OpenLayers.Bounds(
+                -20037508.34, -20037508.34, 20037508.34, 20037508.34
+            ),
+            maxResolution: 156543.0339,
+            numZoomLevels: 26,
+            theme: null,
+            allOverlays: true,
+            eventListeners: {
+                movestart: function(e) {
+                    console.time("move");
+                },
+                moveend: function() {
+                    console.timeEnd("move");
+                },
+                preaddlayer: function(e) {
+                    numLayers++;
+                    e.layer.events.on({
+                        loadstart: function() {
+                            notLoading && console.time("load layer");
+                            notLoading = false;
+                        },
+                        loadend: function() {
+                            numLayers--;
+                            if (numLayers == 0) {
+                                console.timeEnd("load layer");
+                                notLoading = true;
+                                numLayers = map.layers.length;
+                            }
+                        }
+                    })
+                }
+            }
+        });
+        var layerSwitcher = new OpenLayers.Control.LayerSwitcher();
+        map.addControl(layerSwitcher);
+        layerSwitcher.maximizeControl();
+
+        map.addLayer(new OpenLayers.Layer.WMS(
+            "medford", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: "medford", transparent: true},
+            {buffer: 0}
+        ));
+        map.zoomToExtent(new OpenLayers.Bounds(
+            -13697501.986706, 5202943.86936,
+            -13658366.228232, 5222511.748597
+        ));
+    </script>
+  </body>
+</html>

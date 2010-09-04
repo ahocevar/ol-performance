@@ -1,0 +1,144 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Performance Considerations in OpenLayers Based Web Mapping</title>
+    
+    <script type="text/javascript">
+    if (navigator.userAgent.match("MSIE")) {
+        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+    }
+    </script>
+    <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
+    <link rel="stylesheet" href="http://openlayers.org/dev/examples/style.css" type="text/css" />
+  </head>
+  <body>
+    <h1 id="title">Combine OGC Services Wisely</h1>
+
+    <div id="tags"></div>
+
+    <div id="shortdesc">Pro 1: zoom level dependent WMS/vector combo and FeatureAgent</div>
+
+    <div id="map" class="smallmap"></div>
+
+    <div id="docs">
+        <p>This time we want our map to look exactly like in the previous
+        examples, i.e. with the buildings layer below zoning, labels and so on.
+        This cannot be done with the SelectFeature control, so we use Tim's
+        <a href="script/FeatureAgent.js">FeatureAgent</a>. To avoid loading
+        too many features, we configure a WMS layer for the buildings at low
+        zoom levels, and a WFS layer only for higher zoom levels where it
+        really makes sense to make the buildings interactive.
+        <p>Now let's see how we can get an interactive map regardless of the
+        zoom level, and <a href="ogc3.html">without loading tons of vector
+        features</a>.</p>
+    </div>
+    <script src="script/OpenLayers.js"></script>
+    <script src="script/FeatureAgent.js"></script>
+    <script type="text/javascript">
+        OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
+        OpenLayers.ProxyHost = "proxy.cgi?url=";
+        var map = new OpenLayers.Map('map', {
+            projection: "EPSG:900913",
+            units: "m",
+            maxExtent: new OpenLayers.Bounds(
+                -20037508.34, -20037508.34, 20037508.34, 20037508.34
+            ),
+            maxResolution: 156543.0339,
+            numZoomLevels: 26,
+            theme: null,
+            allOverlays: true,
+            eventListeners: {
+                movestart: function(e) {
+                    console.time("move");
+                },
+                moveend: function() {
+                    console.timeEnd("move");
+                }
+            }
+        });
+        new OpenLayers.FeatureAgent(map);
+
+        var layerNames = ["elevation", "citylimits", "buildings", "zoning",
+            "parks", "streets", "hydro", "wetlands", "hospitals", "police",
+            "schools"];
+        
+        // add layers below buildings
+        map.addLayer(new OpenLayers.Layer.WMS(
+            "medford (group 1)", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: layerNames.splice(0, 2), transparent: true},
+            {buffer: 0}
+        ));
+        
+        // add the buildings layer twice: as WMS for resolutions >= 5, and
+        // as Vector for resolutions <= 5.
+        map.addLayer(new OpenLayers.Layer.WMS(
+            "buildings", "http://v2.suite.opengeo.org/geoserver/gwc/service/wms",
+            {layers: "medford:buildings", transparent: true},
+            {buffer: 0, minResolution: 5}
+        ));
+        map.addLayer(new OpenLayers.Layer.Vector(
+            "buildings (vector)",
+            {
+                maxResolution: 5,
+                protocol: new OpenLayers.Protocol.WFS({
+                    url: "http://v2.suite.opengeo.org/geoserver/wfs",
+                    featureType: "buildings",
+                    featureNS: "http://medford.opengeo.org",
+                    version: "1.1.0",
+                    srsName: "EPSG:900913",
+                    outputFormat: "json",
+                    readFormat: new OpenLayers.Format.GeoJSON()
+                }),
+                strategies: [new OpenLayers.Strategy.BBOX({
+                    // only load features for the visible extent
+                    ratio: 1
+                })],
+                styleMap: new OpenLayers.StyleMap({
+                    "default": new OpenLayers.Style({
+                        fillColor: "#808080",
+                        fillOpacity: 1,
+                        strokeColor: "#000000",
+                        strokeOpacity: 1,
+                        strokeWidth: 1
+                    }),
+                    "select": new OpenLayers.Style({
+                        fillColor: "#0000FF",
+                        fillOpacity: 1,
+                        strokeColor: "#EE9900",
+                        strokeOpacity: 1,
+                        strokeWidth: 2
+                    })
+                }),
+                eventListeners: {
+                    loadstart: function() {
+                        console.time("load layer");
+                    },
+                    loadend: function() {
+                        console.timeEnd("load layer");
+                    },
+                    featureover: function(e) {
+                        map.div.title = e.feature.fid;
+                        e.feature.layer.drawFeature(e.feature, "select");
+                    },
+                    featureout: function(e) {
+                        if (e.feature.fid == map.div.title) {
+                            map.div.title = "";
+                        }
+                        e.feature.layer.drawFeature(e.feature, "default");
+                    }
+                }
+            }
+        ));
+        
+        // add layers on top of buildings
+        map.addLayer(new OpenLayers.Layer.WMS(
+            "medford (group 2)", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: layerNames.splice(1), transparent: true},
+            {buffer: 0}
+        ));
+        map.zoomToExtent(new OpenLayers.Bounds(
+            -13697501.986706, 5202943.86936,
+            -13658366.228232, 5222511.748597
+        ));
+    </script>
+  </body>
+</html>

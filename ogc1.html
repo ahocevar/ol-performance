@@ -1,0 +1,139 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Performance Considerations in OpenLayers Based Web Mapping</title>
+    
+    <script type="text/javascript">
+    if (navigator.userAgent.match("MSIE")) {
+        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+    }
+    </script>
+    <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
+    <link rel="stylesheet" href="http://openlayers.org/dev/examples/style.css" type="text/css" />
+  </head>
+  <body>
+    <h1 id="title">Combine OGC Services Wisely</h1>
+
+    <div id="tags"></div>
+
+    <div id="shortdesc">Greenhorn: vector layer and SelectFeature control</div>
+
+    <div id="map" class="smallmap"></div>
+
+    <div id="docs">
+        <p>For feature hightlighting and tool tips, the first thing that comes
+        to mind is a vector layer with a SelectFeature control. The buildings
+        layer here has 50,000 features - enough to freeze any
+        browser. So we set <code>maxFeatures:1000</code> in the protocol
+        options. At lower zoom levels, we won't see all buildings, and even if
+        our vector layer was not on top, the active SelectFeature control would
+        move it there.</p>
+        <p>Let's see how we can have an <a href="ogc2.html">interactive map
+        with all buildings visible and at the right position in the layer
+        stack</a>.</p>
+    </div>
+    <script src="script/OpenLayers.js"></script>
+    <script src="script/FeatureAgent.js"></script>
+    <script type="text/javascript">
+        OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
+        OpenLayers.ProxyHost = "proxy.cgi?url=";
+        var map = new OpenLayers.Map('map', {
+            projection: "EPSG:900913",
+            units: "m",
+            maxExtent: new OpenLayers.Bounds(
+                -20037508.34, -20037508.34, 20037508.34, 20037508.34
+            ),
+            maxResolution: 156543.0339,
+            numZoomLevels: 26,
+            theme: null,
+            allOverlays: true,
+            eventListeners: {
+                movestart: function(e) {
+                    console.time("move");
+                },
+                moveend: function() {
+                    console.timeEnd("move");
+                }
+            }
+        });
+        new OpenLayers.FeatureAgent(map);
+
+        
+        // add all layers except buildings
+        var layerNames = ["elevation", "citylimits", "zoning",
+            "parks", "streets", "hydro", "wetlands", "hospitals", "police",
+            "schools"];
+        map.addLayer(new OpenLayers.Layer.WMS(
+            "medford", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: layerNames, transparent: true},
+            {buffer: 0}
+        ));
+        
+        // add buildings as vector layer on top - it would end up there anyways
+        // as soon as we activate the SelectFeature control
+        map.addLayer(new OpenLayers.Layer.Vector(
+            "buildings (vector)",
+            {
+                protocol: new OpenLayers.Protocol.WFS({
+                    url: "http://v2.suite.opengeo.org/geoserver/wfs",
+                    featureType: "buildings",
+                    featureNS: "http://medford.opengeo.org",
+                    version: "1.1.0",
+                    srsName: "EPSG:900913",
+                    // limit the number of features avoid browser freezes
+                    maxFeatures: 1000
+                }),
+                strategies: [new OpenLayers.Strategy.BBOX({
+                    // only load features for the visible extent
+                    ratio: 1,
+                    // fetch features after every resolution change
+                    resFactor: 1
+                })],
+                styleMap: new OpenLayers.StyleMap({
+                    "default": new OpenLayers.Style({
+                        fillColor: "#808080",
+                        fillOpacity: 1,
+                        strokeColor: "#000000",
+                        strokeOpacity: 1,
+                        strokeWidth: 1
+                    }),
+                    "select": new OpenLayers.Style({
+                        fillColor: "#0000FF",
+                        fillOpacity: 1,
+                        strokeColor: "#EE9900",
+                        strokeOpacity: 1,
+                        strokeWidth: 2
+                    })
+                }),
+                eventListeners: {
+                    loadstart: function() {
+                        console.time("load layer");
+                    },
+                    loadend: function() {
+                        console.timeEnd("load layer");
+                    }
+                }
+            }
+        ));
+        map.zoomToExtent(new OpenLayers.Bounds(
+            -13697501.986706, 5202943.86936,
+            -13658366.228232, 5222511.748597
+        ));
+        
+        map.addControl(new OpenLayers.Control.SelectFeature(map.layers[1], {
+            highlightOnly: true,
+            hover: true,
+            autoActivate: true,
+            eventListeners: {
+                "featurehighlighted": function(e) {
+                    map.div.title = e.feature.fid;
+                },
+                "featureunhighlighted": function(e) {
+                    if (e.feature.fid == map.div.title) {
+                        map.div.title = "";
+                    }
+                }
+            }
+        }));
+    </script>
+  </body>
+</html>

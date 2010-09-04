@@ -1,0 +1,64 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Performance Considerations in OpenLayers Based Web Mapping</title>
+    
+    <script type="text/javascript">
+    if (navigator.userAgent.match("MSIE")) {
+        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+    }
+    </script>
+    <script type="text/javascript">console.time("Visual feedback");</script>
+    <script type="text/javascript">console.time("Load resources");</script>
+    
+    <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
+    <link rel="stylesheet" href="http://openlayers.org/dev/examples/style.css" type="text/css" />
+    <!-- script loader -->
+    <script src="http://openlayers.org/dev/lib/OpenLayers.js"></script>
+    <script type="text/javascript">console.timeEnd("Load resources");</script>
+    <script type="text/javascript">
+        OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
+        var map;
+        function init(){
+            map = new OpenLayers.Map('map', {
+                projection: "EPSG:900913",
+                units: "m",
+                maxExtent: new OpenLayers.Bounds(
+                    -20037508.34, -20037508.34, 20037508.34, 20037508.34
+                ),
+                maxResolution: 156543.0339,
+                numZoomLevels: 26,
+                theme: null
+            });
+
+            map.addLayer(new OpenLayers.Layer.WMS(
+                "Medford", "http://v2.suite.opengeo.org/geoserver/wms",
+                {layers: "medford"}
+            ));
+            map.zoomToExtent(new OpenLayers.Bounds(
+                -13697501.986706, 5202943.86936,
+                -13658366.228232, 5222511.748597
+            ));
+        }
+    </script>
+  </head>
+  <body onload="init()">
+    <h1 id="title">Load OpenLayers The Right Way</h1>
+
+    <div id="tags"></div>
+
+    <div id="shortdesc">Greenhorn: loader script, references in
+    <code>&lt;head&gt;</code></div>
+
+    <div id="map" class="smallmap"></div>
+
+    <div id="docs">
+        <p>School teaches us to load scripts in the document's head. This
+        happens before the page can show anything. We create the Map instance
+        in an <code>onload</code> handler to make sure the DOM is ready.</p>
+        <p>The script loader loads all JavaScript files OpenLayers consists of,
+        resulting in hundreds of HTTP requests. This is only good for
+        debugging. <a href="load2.html">See how we can do better</a>.</p>
+    </div>
+    <script type="text/javascript">console.timeEnd("Visual feedback");</script>
+  </body>
+</html>

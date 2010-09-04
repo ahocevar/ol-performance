@@ -1,0 +1,66 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Performance Considerations in OpenLayers Based Web Mapping</title>
+    
+    <script type="text/javascript">
+    if (navigator.userAgent.match("MSIE")) {
+        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+    }
+    </script>
+    <script type="text/javascript">console.time("Visual feedback");</script>
+    <script type="text/javascript">console.time("Load resources");</script>
+    
+    <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
+    <link rel="stylesheet" href="http://openlayers.org/dev/examples/style.css" type="text/css" />
+  </head>
+  <body>
+    <h1 id="title">Load OpenLayers The Right Way</h1>
+
+    <div id="tags"></div>
+
+    <div id="shortdesc">Pro 2: script built from custom profile, referenced at
+    the end of <code>&lt;body&gt;</code></div>
+
+    <div id="map" class="smallmap"></div>
+
+    <div id="docs">
+        <p>OpenLayers is loaded as <a href="script/wms.cfg">customized build</a>,
+        with a size of 153kB (the minified full build weighs in at almost
+        857kB). This time we don't do any script loading in the document's
+        head. We load all script resources before the 
+        <code>&lt;/body&gt;</code> closing tag and do not need an
+        <code>onload</code> handler any more. We get instant visual feedback.
+        </p>
+        <p>Now that we are satisfied with loading, we can look at
+        <a href=".">other performance considerations</a>.</p>
+    </div>
+    <script type="text/javascript">console.timeEnd("Visual feedback");</script>
+    
+    <!-- minified build, custom profile (api/wms.cfg) -->
+    <script src="script/OpenLayers-wms.js"></script>
+    <script type="text/javascript">console.timeEnd("Load resources");</script>
+    <script type="text/javascript">
+        OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
+        console.timeEnd("load");
+        var map = new OpenLayers.Map('map', {
+            projection: "EPSG:900913",
+            units: "m",
+            maxExtent: new OpenLayers.Bounds(
+                -20037508.34, -20037508.34, 20037508.34, 20037508.34
+            ),
+            maxResolution: 156543.0339,
+            numZoomLevels: 26,
+            theme: null
+        });
+
+        map.addLayer(new OpenLayers.Layer.WMS(
+            "Medford", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: "medford"}
+        ));
+        map.zoomToExtent(new OpenLayers.Bounds(
+            -13697501.986706, 5202943.86936,
+            -13658366.228232, 5222511.748597
+        ));
+    </script>
+  </body>
+</html>

@@ -1,0 +1,91 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Performance Considerations in OpenLayers Based Web Mapping</title>
+
+    <script type="text/javascript">
+    if (navigator.userAgent.match("MSIE")) {
+        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+    }
+    </script>
+    <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
+    <link rel="stylesheet" href="http://openlayers.org/dev/examples/style.css" type="text/css" />
+  </head>
+  <body>
+    <h1 id="title">Group Your Layers</h1>
+
+    <div id="tags"></div>
+
+    <div id="shortdesc">Greenhorn: one <code>OpenLayers.Layer.WMS</code> instance
+    for every layer</div>
+
+    <div id="map" class="smallmap"></div>
+
+    <div id="docs">
+        <p>Despite all layers being configured with <code>buffer: 0</code>, it
+        takes a while to load the layers, and panning the map also gets
+        slower. The advantage is that layers can be turned on and off without
+        requiring any additional WMS requests.</p>
+        <p>Now let's try to achieve the same visual experience with a
+        <a href="group2.html">grouped layer</a>.</p>
+    </div>
+    <script src="script/OpenLayers-wms-layerswitcher.js"></script>
+    <script type="text/javascript">
+        OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
+        var numLayers = 0, notLoading = true;
+        var map = new OpenLayers.Map('map', {
+            projection: "EPSG:900913",
+            units: "m",
+            maxExtent: new OpenLayers.Bounds(
+                -20037508.34, -20037508.34, 20037508.34, 20037508.34
+            ),
+            maxResolution: 156543.0339,
+            numZoomLevels: 26,
+            theme: null,
+            allOverlays: true,
+            eventListeners: {
+                movestart: function(e) {
+                    console.time("move");
+                },
+                moveend: function() {
+                    console.timeEnd("move");
+                },
+                preaddlayer: function(e) {
+                    numLayers++;
+                    e.layer.events.on({
+                        loadstart: function() {
+                            notLoading && console.time("load layer");
+                            notLoading = false;
+                        },
+                        loadend: function() {
+                            numLayers--;
+                            if (numLayers == 0) {
+                                console.timeEnd("load layer");
+                                notLoading = true;
+                                numLayers = map.layers.length;
+                            }
+                        }
+                    })
+                }
+            }
+        });
+        var layerNames = ["elevation", "citylimits", "buildings", "zoning",
+            "parks", "streets", "hydro", "wetlands", "hospitals", "police",
+            "schools"];
+        var layerSwitcher = new OpenLayers.Control.LayerSwitcher();
+        map.addControl(layerSwitcher);
+        layerSwitcher.maximizeControl();
+
+        for (var i=0; i<layerNames.length; i++) {
+            map.addLayer(new OpenLayers.Layer.WMS(
+                layerNames[i], "http://v2.suite.opengeo.org/geoserver/wms",
+                {layers: layerNames[i], transparent: true},
+                {buffer: 0}
+            ));
+        }
+        map.zoomToExtent(new OpenLayers.Bounds(
+            -13697501.986706, 5202943.86936,
+            -13658366.228232, 5222511.748597
+        ));
+    </script>
+  </body>
+</html>

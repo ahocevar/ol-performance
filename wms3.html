@@ -1,0 +1,82 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Performance Considerations in OpenLayers Based Web Mapping</title>
+
+    <script type="text/javascript">
+    if (navigator.userAgent.match("MSIE")) {
+        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+    }
+    </script>
+    <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
+    <link rel="stylesheet" href="http://openlayers.org/dev/examples/style.css" type="text/css" />
+  </head>
+  <body>
+    <h1 id="title">Know Your Config Options</h1>
+
+    <div id="tags"></div>
+
+    <div id="shortdesc">Pro 2: custom tile sizes</div>
+
+    <div id="map" class="smallmap"></div>
+
+    <div id="docs">
+        <p>Again, we have two WMS layers. The first one is configured with a
+        custom <code>tileSize</code> of 512x256 pixels, resulting in 4 WMS
+        requests. For the second one, a <code>singleTile</code> layer, we
+        control the size of the requested image with the <code>ratio</code>
+        option.</p>
+        <p>Now that we know how reduce the impact on WMS servers with some
+        simple config options, we can go on with <a href=".">more performance
+        considerations</a>.
+    </div>
+    <script src="script/OpenLayers-wms-layerswitcher.js"></script>
+    <script type="text/javascript">
+        OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
+        var map = new OpenLayers.Map('map', {
+            projection: "EPSG:900913",
+            units: "m",
+            maxExtent: new OpenLayers.Bounds(
+                -20037508.34, -20037508.34, 20037508.34, 20037508.34
+            ),
+            maxResolution: 156543.0339,
+            numZoomLevels: 26,
+            theme: null,
+            eventListeners: {
+                preaddlayer: function(e) {
+                    e.layer.events.on({
+                        loadstart: function() {console.time("load layer");},
+                        loadend: function() {console.timeEnd("load layer");}
+                    })
+                }
+            }
+        });
+        var layerSwitcher = new OpenLayers.Control.LayerSwitcher();
+        map.addControl(layerSwitcher);
+        layerSwitcher.maximizeControl();
+        map.addLayer(new OpenLayers.Layer("No layer", {isBaseLayer: true}));
+        
+        map.addLayer(new OpenLayers.Layer.WMS(
+            "Medford - 512x256px tiles", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: "medford"},
+            // only loads tiles that are at least partially visible
+            {
+                buffer: 0,
+                tileSize: new OpenLayers.Size(512, 256)
+            }
+        ));
+        map.addLayer(new OpenLayers.Layer.WMS(
+            "Medford - {ratio: 1}", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: "medford"},
+            // loads one custom tile for the visible extent
+            {
+                singleTile: true,
+                ratio: 1
+            }
+        ));
+        map.zoomToExtent(new OpenLayers.Bounds(
+            -13697501.986706, 5202943.86936,
+            -13658366.228232, 5222511.748597
+        ));
+    </script>
+  </body>
+</html>

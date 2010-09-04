@@ -1,0 +1,62 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Performance Considerations in OpenLayers Based Web Mapping</title>
+
+    <script type="text/javascript">
+    if (navigator.userAgent.match("MSIE")) {
+        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+    }
+    </script>
+    <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
+    <link rel="stylesheet" href="http://openlayers.org/dev/examples/style.css" type="text/css" />
+  </head>
+  <body>
+    <h1 id="title">Know Your Config Options</h1>
+
+    <div id="tags"></div>
+
+    <div id="shortdesc">Greenhorn: default configuration</div>
+
+    <div id="map" class="smallmap"></div>
+
+    <div id="docs">
+        <p>The WMS layer in this map is configured with default options,
+        resulting in 35 WMS requests. By default, OpenLayers adds two invisible
+        rows and columns of tiles at every edge of the visible map to have
+        tiles available already while panning.</p>
+        <p>See how we can better control the server load by
+        <a href="wms2.html">taking advantage of configuration options</a>.</p>
+    </div>
+    <script src="script/OpenLayers-wms.js"></script>
+    <script type="text/javascript">
+        OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
+        var map = new OpenLayers.Map('map', {
+            projection: "EPSG:900913",
+            units: "m",
+            maxExtent: new OpenLayers.Bounds(
+                -20037508.34, -20037508.34, 20037508.34, 20037508.34
+            ),
+            maxResolution: 156543.0339,
+            numZoomLevels: 26,
+            theme: null,
+            eventListeners: {
+                preaddlayer: function(e) {
+                    e.layer.events.on({
+                        loadstart: function() {console.time("load layer");},
+                        loadend: function() {console.timeEnd("load layer");}
+                    })
+                }
+            }
+        });
+
+        map.addLayer(new OpenLayers.Layer.WMS(
+            "Medford", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: "medford"}
+        ));
+        map.zoomToExtent(new OpenLayers.Bounds(
+            -13697501.986706, 5202943.86936,
+            -13658366.228232, 5222511.748597
+        ));
+    </script>
+  </body>
+</html>

@@ -1,0 +1,92 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Performance Considerations in OpenLayers Based Web Mapping</title>
+
+    <script type="text/javascript">
+    if (navigator.userAgent.match("MSIE")) {
+        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+    }
+    </script>
+    <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
+    <link rel="stylesheet" href="http://openlayers.org/dev/examples/style.css" type="text/css" />
+  </head>
+  <body>
+    <h1 id="title">Use a Server Side Cache</h1>
+
+    <div id="tags"></div>
+
+    <div id="shortdesc">Pro 2:
+    <a href="http://www.opengeospatial.org/standards/wmts">WMTS</a>
+    caching</div>
+
+    <div id="map" class="smallmap"></div>
+
+    <div id="docs">
+        <p><a href="http://geowebcache.org/">GeoWebCache</a> supports the new
+        WMTS standard. Starting with release 2.10, OpenLayers also has
+        everything to work with WMTS caches.</p>
+        <p>Enough performance considerations on tiled maps. Let's go back to
+        the <a href=".">index</a> to prepare ourselves for interactive maps.
+    </div>
+    <script src="script/OpenLayers-wmts.js"></script>
+    <script type="text/javascript">
+        OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
+        var numLayers = 0, notLoading = true;
+        var map = new OpenLayers.Map('map', {
+            projection: "EPSG:900913",
+            units: "m",
+            maxExtent: new OpenLayers.Bounds(
+                -20037508.34, -20037508.34, 20037508.34, 20037508.34
+            ),
+            maxResolution: 156543.0339,
+            numZoomLevels: 26,
+            theme: null,
+            allOverlays: true,
+            eventListeners: {
+                movestart: function(e) {
+                    console.time("move");
+                },
+                moveend: function() {
+                    console.timeEnd("move");
+                },
+                preaddlayer: function(e) {
+                    numLayers++;
+                    e.layer.events.on({
+                        loadstart: function() {
+                            notLoading && console.time("load layer");
+                            notLoading = false;
+                        },
+                        loadend: function() {
+                            numLayers--;
+                            if (numLayers == 0) {
+                                console.timeEnd("loadlayer ");
+                                notLoading = true;
+                                numLayers = map.layers.length;
+                            }
+                        }
+                    })
+                }
+            }
+        });
+
+        var matrixIds = new Array(26);
+        for (var i=0; i<26; ++i) {
+            matrixIds[i] = "EPSG:900913:" + i;
+        }
+        map.addLayer(new OpenLayers.Layer.WMTS({
+            name: "medford (WMTS)",
+            url: "http://v2.suite.opengeo.org/geoserver/gwc/service/wmts",
+            layer: "medford",
+            matrixSet: "EPSG:900913",
+            matrixIds: matrixIds,
+            format: "image/png",
+            style: "_null",
+            buffer: 0
+        }));
+        map.zoomToExtent(new OpenLayers.Bounds(
+            -13697501.986706, 5202943.86936,
+            -13658366.228232, 5222511.748597
+        ));
+    </script>
+  </body>
+</html>
