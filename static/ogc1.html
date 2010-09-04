@@ -15,27 +15,27 @@
 
     <div id="tags"></div>
 
-    <div id="shortdesc">Pro 1: zoom level dependent WMS/vector combo and FeatureAgent</div>
+    <div id="shortdesc">Greenhorn: vector layer and SelectFeature control</div>
 
     <div id="map" class="smallmap"></div>
 
     <div id="docs">
-        <p>This time we want our map to look exactly like in the previous
-        examples, i.e. with the buildings layer below zoning, labels and so on.
-        This cannot be done with the SelectFeature control, so we use Tim's
-        <a href="script/FeatureAgent.js">FeatureAgent</a>. To avoid loading
-        too many features, we configure a WMS layer for the buildings at low
-        zoom levels, and a WFS layer only for higher zoom levels where it
-        really makes sense to make the buildings interactive.
-        <p>Now let's see how we can get an interactive map regardless of the
-        zoom level, and <a href="ogc3.html">without loading tons of vector
-        features</a>.</p>
+        <p>For feature hightlighting and tool tips, the first thing that comes
+        to mind is a vector layer with a SelectFeature control. The buildings
+        layer here has 50,000 features - enough to freeze any
+        browser. So we set <code>maxFeatures:1000</code> in the protocol
+        options. At lower zoom levels, we won't see all buildings, and even if
+        our vector layer was not on top, the active SelectFeature control would
+        move it there.</p>
+        <p>Let's see how we can have an <a href="ogc2.html">interactive map
+        with all buildings visible and at the right position in the layer
+        stack</a>.</p>
     </div>
     <script src="script/OpenLayers.js"></script>
     <script src="script/FeatureAgent.js"></script>
     <script type="text/javascript">
         OpenLayers.ImgPath = "http://openlayers.org/api/2.10-rc1/img/";
-        OpenLayers.ProxyHost = "proxy.cgi?url=";
+        OpenLayers.ProxyHost = "cgi-bin/proxy.cgi?url=";
         var map = new OpenLayers.Map('map', {
             projection: "EPSG:900913",
             units: "m",
@@ -57,40 +57,36 @@
         });
         new OpenLayers.FeatureAgent(map);
 
-        var layerNames = ["elevation", "citylimits", "buildings", "zoning",
+        
+        // add all layers except buildings
+        var layerNames = ["elevation", "citylimits", "zoning",
             "parks", "streets", "hydro", "wetlands", "hospitals", "police",
             "schools"];
-        
-        // add layers below buildings
         map.addLayer(new OpenLayers.Layer.WMS(
-            "medford (group 1)", "http://v2.suite.opengeo.org/geoserver/wms",
-            {layers: layerNames.splice(0, 2), transparent: true},
+            "medford", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: layerNames, transparent: true},
             {buffer: 0}
         ));
         
-        // add the buildings layer twice: as WMS for resolutions >= 5, and
-        // as Vector for resolutions <= 5.
-        map.addLayer(new OpenLayers.Layer.WMS(
-            "buildings", "http://v2.suite.opengeo.org/geoserver/gwc/service/wms",
-            {layers: "medford:buildings", transparent: true},
-            {buffer: 0, minResolution: 5}
-        ));
+        // add buildings as vector layer on top - it would end up there anyways
+        // as soon as we activate the SelectFeature control
         map.addLayer(new OpenLayers.Layer.Vector(
             "buildings (vector)",
             {
-                maxResolution: 5,
                 protocol: new OpenLayers.Protocol.WFS({
                     url: "http://v2.suite.opengeo.org/geoserver/wfs",
                     featureType: "buildings",
                     featureNS: "http://medford.opengeo.org",
                     version: "1.1.0",
                     srsName: "EPSG:900913",
-                    outputFormat: "json",
-                    readFormat: new OpenLayers.Format.GeoJSON()
+                    // limit the number of features avoid browser freezes
+                    maxFeatures: 1000
                 }),
                 strategies: [new OpenLayers.Strategy.BBOX({
                     // only load features for the visible extent
-                    ratio: 1
+                    ratio: 1,
+                    // fetch features after every resolution change
+                    resFactor: 1
                 })],
                 styleMap: new OpenLayers.StyleMap({
                     "default": new OpenLayers.Style({
@@ -114,31 +110,30 @@
                     },
                     loadend: function() {
                         console.timeEnd("load layer");
-                    },
-                    featureover: function(e) {
-                        map.div.title = e.feature.fid;
-                        e.feature.layer.drawFeature(e.feature, "select");
-                    },
-                    featureout: function(e) {
-                        if (e.feature.fid == map.div.title) {
-                            map.div.title = "";
-                        }
-                        e.feature.layer.drawFeature(e.feature, "default");
                     }
                 }
             }
-        ));
-        
-        // add layers on top of buildings
-        map.addLayer(new OpenLayers.Layer.WMS(
-            "medford (group 2)", "http://v2.suite.opengeo.org/geoserver/wms",
-            {layers: layerNames.splice(1), transparent: true},
-            {buffer: 0}
         ));
         map.zoomToExtent(new OpenLayers.Bounds(
             -13697501.986706, 5202943.86936,
             -13658366.228232, 5222511.748597
         ));
+        
+        map.addControl(new OpenLayers.Control.SelectFeature(map.layers[1], {
+            highlightOnly: true,
+            hover: true,
+            autoActivate: true,
+            eventListeners: {
+                "featurehighlighted": function(e) {
+                    map.div.title = e.feature.fid;
+                },
+                "featureunhighlighted": function(e) {
+                    if (e.feature.fid == map.div.title) {
+                        map.div.title = "";
+                    }
+                }
+            }
+        }));
     </script>
   </body>
 </html>

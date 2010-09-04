@@ -1,0 +1,21 @@
+application: ol-performance
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: /cgi-bin/proxy.cgi
+  script: proxy.py
+
+- url: /(.*\.(html|png|js))
+  static_files: static/\1
+  upload: static/(.*\.(html|png|js))
+
+- url: /(.*\.cfg)
+  static_files: static/\1
+  mime_type: text/plain
+  upload: static/(.*\.cfg)
+
+- url: /.*
+  static_files: static/index.html
+  upload: static/index.html
