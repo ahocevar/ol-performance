@@ -50,7 +50,7 @@
                     numLayers++;
                     e.layer.events.on({
                         loadstart: function() {
-                            notLoading && console.time("layer layer");
+                            notLoading && console.time("load layer");
                             notLoading = false;
                         },
                         loadend: function() {
