@@ -4,7 +4,7 @@
     
     <script type="text/javascript">
     if (navigator.userAgent.match("MSIE")) {
-        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+        document.write("<script src='script/firebug.js'><\/script>");
     }
     </script>
     <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
@@ -57,14 +57,10 @@
         });
         new OpenLayers.FeatureAgent(map);
 
-        var layerNames = ["elevation", "citylimits", "buildings", "zoning",
-            "parks", "streets", "hydro", "wetlands", "hospitals", "police",
-            "schools"];
-        
         // add layers below buildings
         map.addLayer(new OpenLayers.Layer.WMS(
             "medford (group 1)", "http://v2.suite.opengeo.org/geoserver/wms",
-            {layers: layerNames.splice(0, 2), transparent: true},
+            {layers: "elevation,citylimits", transparent: true},
             {buffer: 0}
         ));
         
@@ -132,7 +128,7 @@
         // add layers on top of buildings
         map.addLayer(new OpenLayers.Layer.WMS(
             "medford (group 2)", "http://v2.suite.opengeo.org/geoserver/wms",
-            {layers: layerNames.splice(1), transparent: true},
+            {layers: "zoning,parks,streets,hydro,wetlands,hospitals,police,schools", transparent: true},
             {buffer: 0}
         ));
         map.zoomToExtent(new OpenLayers.Bounds(

@@ -4,7 +4,7 @@
     
     <script type="text/javascript">
     if (navigator.userAgent.match("MSIE")) {
-        document.write("<script src='http://openlayers.org/dev/lib/Firebug/firebug.js'><\/script>");
+        document.write("<script src='script/firebug.js'><\/script>");
     }
     </script>
     <link rel="stylesheet" href="http://openlayers.org/api/2.10-rc1/theme/default/style.css" type="text/css" />
@@ -52,15 +52,11 @@
             }
         });
         
-        var layerNames = ["elevation", "citylimits", "buildings", "zoning",
-            "parks", "streets", "hydro", "wetlands", "hospitals", "police",
-            "schools"];
-        
         // add layers below buildings - we could also include buildings, but
         // for comparison with ogc1.html, we add it separately
         map.addLayer(new OpenLayers.Layer.WMS(
             "medford (group 1)", "http://v2.suite.opengeo.org/geoserver/wms",
-            {layers: layerNames.splice(0, 2), transparent: true}, 
+            {layers: "elevation,citylimits", transparent: true}, 
             {buffer: 0}
         ));
         // add buildings layer from GWC, with console output
@@ -121,8 +117,8 @@
 
         // add layers above buildings.
         map.addLayer(new OpenLayers.Layer.WMS(
-            "buildings", "http://v2.suite.opengeo.org/geoserver/wms",
-            {layers: layerNames.splice(1), transparent: true},
+            "medford (group 2)", "http://v2.suite.opengeo.org/geoserver/wms",
+            {layers: "zoning,parks,streets,hydro,wetlands,hospitals,police,schools", transparent: true},
             {buffer: 0}
         ));
         
