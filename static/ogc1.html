@@ -19,10 +19,10 @@
         <p>For feature hightlighting and tool tips, the first thing that comes
         to mind is a vector layer with a SelectFeature control. The buildings
         layer here has 50,000 features - enough to freeze any
-        browser. So we set <code>maxFeatures:1000</code> in the protocol
-        options. At lower zoom levels, we won't see all buildings, and even if
-        our vector layer was not on top, the active SelectFeature control would
-        move it there.</p>
+        browser. So we use the compact GeoJSON format and set
+        <code>maxFeatures:1000</code> in the protocol options. At lower zoom
+        levels, we won't see all buildings, and even if our vector layer was
+        not on top, the active SelectFeature control would move it there.</p>
         <p>Let's see how we can have an <a href="ogc2.html">interactive map
         with all buildings visible and at the right position in the layer
         stack</a>.</p>
