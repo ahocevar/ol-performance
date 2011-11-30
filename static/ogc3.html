@@ -96,6 +96,9 @@
             clickTolerance: 0,
             filterType: OpenLayers.Filter.Spatial.INTERSECTS,
             hover: true,
+            handlerOptions: {
+                hover: {'pixelTolerance': 2}
+            },
             autoActivate: true,
             eventListeners: {
                 "hoverfeature": function(e) {
